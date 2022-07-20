@@ -9,28 +9,34 @@ import {
   Link,
 } from "@chakra-ui/react";
 import axios from "axios";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useContext } from "react";
 import { AiFillHeart } from "react-icons/ai";
 import NavBar from "./NavBar";
+import { AccountContext } from "./Accounts";
 
 const NewsCard = () => {
   const [posts, setPost] = useState([]);
+  const { getSession, poolcred } = useContext(AccountContext);
 
   useEffect(() => {
-    axios
-      .get("https://api.newscatcherapi.com/v2/search", {
-        params: { q: "*", lang: "en", sort_by: "relevancy", page: "1" },
-        headers: {
-          "x-api-key": "pwCd_zDgwwssiG7Nz-juhUorStxg0rYQF6rFJKsbuAE",
-        },
-      })
-      .then((response) => {
-        setPost(response.data);
-      })
-      .catch((error) => {
-        console.log(error);
+    if (poolcred !== "") {
+      getSession().then(async ({ header }) => {
+        axios
+          .get("https://api.newscatcherapi.com/v2/search", {
+            params: { q: "*", lang: "en", sort_by: "relevancy", page: "1" },
+            headers: {
+              "x-api-key": "pwCd_zDgwwssiG7Nz-juhUorStxg0rYQF6rFJKsbuAE",
+            },
+          })
+          .then((response) => {
+            setPost(response.data);
+          })
+          .catch((error) => {
+            console.log(error);
+          });
       });
-  }, []);
+    }
+  }, [poolcred]);
 
   return (
     <Box>
@@ -39,10 +45,10 @@ const NewsCard = () => {
       </Box>
       <Container as="main">
         <Box>
-          {posts.articles?.map((article) => {
+          {posts.articles?.map((article, index) => {
             return (
-              <Box width="100wh" color="black">
-                <Box p={8}>
+              <Box width="100wh" color="black" key={index}>
+                <Box p={4}>
                   <Stack direction="row">
                     <Badge colorScheme="blue">{article.topic}</Badge>
                     <Badge colorScheme="red" variant="outline" ml={2}>

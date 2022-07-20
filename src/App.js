@@ -9,6 +9,9 @@ import { Account } from "./Components/Accounts";
 import PrivateRoute from "./PrivateRoute/PrivateRoute";
 import Home from "./Components/home";
 import NewsCard from "./Components/home";
+import { dataPromise } from "./UserPool";
+import NavBar from "./Components/NavBar";
+import ConfirmUser from "./Components/Confirmation";
 
 const App = () => {
   return (
@@ -16,6 +19,7 @@ const App = () => {
       <Account>
         <BrowserRouter>
           <Routes>
+            <Route path="/navbar" element={<NavBar />} />
             <Route
               path="/categories"
               element={
@@ -26,8 +30,9 @@ const App = () => {
             />
             <Route path="/" element={<Login />} />
             <Route path="/register" element={<Register />} />
-            <Route path="/home" element={<NewsCard />} />
+            <Route path="/home" element={<Home />} />
             <Route path="/categories" element={<Categories />} />
+            <Route path="/confirmation" element={<ConfirmUser />} />
           </Routes>
         </BrowserRouter>
       </Account>

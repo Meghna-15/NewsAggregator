@@ -9,7 +9,7 @@ import {
   Button,
   CheckboxGroup,
 } from "@chakra-ui/react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 const Categories = () => {
   const categories = [
@@ -27,6 +27,12 @@ const Categories = () => {
     "food",
   ];
 
+  const [favCategories, setFavCategories] = useState(categories);
+
+  useEffect(() => {
+    setFavCategories(categories);
+  }, []);
+
   const [selectedCategories, setSelectedCategories] = useState([]);
 
   const handleSelection = (e) => {
@@ -38,7 +44,9 @@ const Categories = () => {
     }
   };
 
-  console.log(selectedCategories);
+  const saveFavorites = () => {
+    setFavCategories(selectedCategories);
+  };
 
   return (
     <Grid
@@ -58,7 +66,7 @@ const Categories = () => {
             justifyContent="center"
             alignItems="center"
           >
-            <Heading>Select Your Favourite</Heading>
+            <Heading>Select Your Favorite</Heading>
             <SimpleGrid
               columns={{ base: 2, md: 3 }}
               spacing={5}
@@ -82,7 +90,13 @@ const Categories = () => {
                 ))}
               </CheckboxGroup>
             </SimpleGrid>
-            <Button colorScheme="purple" width="100%" size="lg" mt={10}>
+            <Button
+              colorScheme="purple"
+              width="100%"
+              size="lg"
+              mt={10}
+              onClick={saveFavorites}
+            >
               Save Favourites
             </Button>
           </Flex>

@@ -1,8 +1,13 @@
-import { CognitoUserPool } from "amazon-cognito-identity-js";
+import axios from "axios";
 
-const poolData = {
-  UserPoolId: "us-east-1_jvaqG9oF6",
-  ClientId: "7e3rqq4mpufgfns2bfk6jkfa7a",
-};
+function dataPromise() {
+  return axios
+    .get(
+      "https://vhfrosov44r5iiwekwpmfp5z2u0sfyup.lambda-url.us-east-1.on.aws/"
+    )
+    .then((response) => {
+      return response.data.body;
+    });
+}
 
-export default new CognitoUserPool(poolData);
+export { dataPromise };

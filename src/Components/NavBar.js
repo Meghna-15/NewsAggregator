@@ -17,14 +17,22 @@ import {
 import { FiMenu } from "react-icons/fi";
 import { useRef, useContext } from "react";
 import { AccountContext } from "./Accounts";
+import { useNavigate } from "react-router-dom";
 
 const NavBar = () => {
   const btnRef = useRef();
   const { isOpen, onOpen, onClose } = useDisclosure();
   const menuList = ["home", "profile", "favorite", "categories", "logout"];
   const isDesktop = useBreakpointValue({ base: false, lg: true });
+  const navigate = useNavigate();
 
   const { logout } = useContext(AccountContext);
+
+  const handleLogout = () => {
+    console.log("logout clicked");
+    logout();
+    navigate("/");
+  };
 
   return (
     <Box
@@ -41,7 +49,15 @@ const NavBar = () => {
             <Stack direction="row">
               <ButtonGroup variant="link" spacing="8">
                 {menuList.map((item) => (
-                  <Button key={item} color="white">
+                  <Button
+                    key={item}
+                    color="white"
+                    onClick={() =>
+                      !(item === "logout")
+                        ? navigate("/" + item + "")
+                        : handleLogout()
+                    }
+                  >
                     {item}
                   </Button>
                 ))}
@@ -61,11 +77,21 @@ const NavBar = () => {
                   <DrawerBody>
                     <ButtonGroup variant="link" spacing="8">
                       <Stack direction="column">
-                        {menuList.map((item) => (
-                          <Link to={item} p={3}>
-                            {item}
-                          </Link>
-                        ))}
+                        <Box onClick={() => navigate("/home")} p={3}>
+                          home
+                        </Box>
+                        <Link to="profile" p={3}>
+                          {"profile"}
+                        </Link>
+                        <Box onClick={() => navigate("/favourite")} p={3}>
+                          {"favorite"}
+                        </Box>
+                        <Box onClick={() => navigate("/categories")} p={3}>
+                          {"categories"}
+                        </Box>
+                        <Box onClick={() => handleLogout()} p={3}>
+                          {"logout"}
+                        </Box>
                       </Stack>
                     </ButtonGroup>
                   </DrawerBody>

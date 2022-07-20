@@ -18,7 +18,7 @@ import Cookies from "js-cookie";
 import { useState, useContext } from "react";
 import { FaUserAlt, FaLock } from "react-icons/fa";
 import { AccountContext } from "./Accounts";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 
 const CFaUserAlt = chakra(FaUserAlt);
 const CFaLock = chakra(FaLock);
@@ -132,9 +132,11 @@ const Login = () => {
               Sign In
             </Button>
 
-            <Button colorScheme="gray" width="100%" size="lg" mt={3}>
-              Register
-            </Button>
+            <Link to="/register">
+              <Button colorScheme="gray" width="100%" size="lg" mt={3}>
+                Register
+              </Button>
+            </Link>
           </Box>
         </Flex>
       </GridItem>

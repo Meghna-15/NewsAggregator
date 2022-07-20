@@ -13,20 +13,25 @@ import {
   Button,
   Heading,
   Center,
+  useToast,
 } from "@chakra-ui/react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { FaUserAlt, FaLock } from "react-icons/fa";
 import { MdEmail } from "react-icons/md";
 import ReactFlagsSelect from "react-flags-select";
-import UserPool from "../UserPool.js";
 import { useNavigate } from "react-router-dom";
-import { CognitoUserAttribute } from "amazon-cognito-identity-js";
+import {
+  CognitoUserPool,
+  CognitoUserAttribute,
+} from "amazon-cognito-identity-js";
+import axios from "axios";
 
 const CFaUserAlt = chakra(FaUserAlt);
 const CFaLock = chakra(FaLock);
 const CMdEmail = chakra(MdEmail);
 
 const Register = () => {
+  const toaster = useToast();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [username, setUserName] = useState("");
@@ -39,6 +44,20 @@ const Register = () => {
   const onSelect = (code) => setCountry(code);
 
   const navigate = useNavigate();
+
+  const [poolCredentials, setPoolCredentials] = useState({});
+
+  useEffect(() => {
+    setPoolCredentials(
+      axios
+        .get(
+          "https://vhfrosov44r5iiwekwpmfp5z2u0sfyup.lambda-url.us-east-1.on.aws/"
+        )
+        .then((response) => {
+          setPoolCredentials(response.data.body);
+        })
+    );
+  }, []);
 
   const handleEmailChange = (e) => {
     const value = e.target.value;
@@ -58,22 +77,34 @@ const Register = () => {
   const handleRegistration = (e) => {
     const attributeList = [];
 
+    const UserPool = new CognitoUserPool({
+      UserPoolId: poolCredentials.USER_POOL_ID,
+      ClientId: poolCredentials.USER_POOL_CLIENT_ID,
+    });
+
     attributeList.push(
-      new CognitoUserAttribute({ Name: "preferred_username", Value: username })
+      new CognitoUserAttribute({ Name: "custom:username", Value: username })
     );
     attributeList.push(
       new CognitoUserAttribute({ Name: "email", Value: email })
     );
 
     attributeList.push(
-      new CognitoUserAttribute({ Name: "custom:Country", Value: country })
+      new CognitoUserAttribute({ Name: "custom:country", Value: country })
     );
 
     UserPool.signUp(email, password, attributeList, null, (err, data) => {
       if (err) {
-        console.log(err);
+        toaster({
+          position: "bottom-left",
+          render: () => (
+            <Box color="white" p={3} bg="blue.500">
+              Hello World
+            </Box>
+          ),
+        });
       } else {
-        navigate("/login");
+        navigate("/");
       }
     });
   };
