@@ -15,7 +15,7 @@ Resources:
             InstanceTenancy: default
             Tags:
                 - Key: Name
-                  Value: VPC for build EC2
+                  Value: VPC for build EC2222
 
     InternetGateway:
         Type: AWS::EC2::InternetGateway
@@ -35,7 +35,7 @@ Resources:
             MapPublicIpOnLaunch: true
             Tags:
                 - Key: Name
-                  Value: Public Subnet A
+                  Value: Public Subnet A12222
 
     PublicSubnetB:
         Type: AWS::EC2::Subnet
@@ -46,7 +46,7 @@ Resources:
             MapPublicIpOnLaunch: true
             Tags:
                 - Key: Name
-                  Value: Public Subnet B
+                  Value: Public Subnet B12222
 
     RouteTable:
         Type: AWS::EC2::RouteTable
@@ -54,7 +54,7 @@ Resources:
             VpcId: !Ref EC2VPC
             Tags:
                 - Key: Name
-                  Value: Route Table for G42
+                  Value: Route Table for G4212222
 
     InternetRoute:
         Type: AWS::EC2::Route
@@ -73,8 +73,8 @@ Resources:
     EC2SecurityGroup:
         Type: AWS::EC2::SecurityGroup
         Properties:
-            GroupName: "react-sg"
-            GroupDescription: "Security Group for build instance"
+            GroupName: "react-sag122"
+            GroupDescription: "Security Group for build instaance"
             VpcId: !Ref EC2VPC
             SecurityGroupIngress:
 
@@ -93,7 +93,7 @@ Resources:
                   ToPort: 5000
                   CidrIp: 0.0.0.0/0
             Tags: [
-                { "Key": "Name", "Value": "reactbuildsg" } ]
+                { "Key": "Name", "Value": "reactbuildsag122" } ]
 
     EC2Instance1:
         Type: AWS::EC2::Instance
@@ -101,7 +101,7 @@ Resources:
             SubnetId: !Ref PublicSubnetA
             AvailabilityZone: us-east-1a
             ImageId: ami-0022f774911c1d690
-            InstanceType: t2.micro
+            InstanceType: t2.small
             SecurityGroupIds:
                 - !Ref EC2SecurityGroup
             BlockDeviceMappings:
@@ -117,26 +117,31 @@ Resources:
                     mkdir /home/ec2-user/cloud
                     cd /home/ec2-user/cloud
                     git clone https://qsyed:glpat-o3Ysztbru2T4vc4L1FGE@git.cs.dal.ca/courses/2022-summer/csci4145-5409/group-37.git
-                    cd /group-37
-                    echo REACT_APP_BASE_URL=https://${!Ref }.execute-api.us-east-1.amazonaws.com/Development > .env.production.local
-                    yum install -y gcc-c++ make
-                    yum install curl -y
-                    yum install zip unzip
-                    curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
+                    cd ./group-37/frontend
+                    echo REACT_APP_BASE_URL=https://${EC2SecurityGroup}.execute-api.us-east-1.amazonaws.com/Development > .env.production.local
+                    sudo yum install -y gcc-c++ make
+                    sudo yum install curl -y
+                    sudo yum install zip unzip -y
+                    sudo curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
                     unzip awscliv2.zip
                     sudo ./aws/install
+                    touch logs.txt
+                    echo awsinstalldone >> ./logs.txt
                     export AWS_ACCESS_KEY_ID=ASIA3RWEBYW3GJSWVQVL
                     export AWS_SECRET_ACCESS_KEY=ibzw9QAm6MhErQhD6CJrEP1N+Nk8/CZQczwWxD/+
                     export AWS_SESSION_TOKEN=FwoGZXIvYXdzEIv//////////wEaDNBdZ5kabXP4Ysd4dSLAAQ/lNeRvGx+7PJxR+IizAn26ARjOstPC0SYz3vBZQBeF97fS6jI85Ivqi2jDDdePffP8jPEdpGn+rVvGloMC11P/ygyXFoeH8bVPnxLk82NwoY9dTuDp8l462gBT0co0o5zfTInPFqzSvlSdMtQoEiQIiut3fr2JDJEkzvm+1ps5kvjbAvMoBz3DjiZDuFpsfDqS8cXrMey4Du/8yqdVaTmSU7AMP+t1gDDLyhOu/JfTJI4jpbYMQwkfqd5urv4uAiiG1ICXBjIty4qtuOptGlZTtygtHeMWPVh1peZsq+TaloPt0Rfpfx05/Y3cxhtjNrO24Z+F
                     curl -sL https://rpm.nodesource.com/setup_16.x | sudo -E bash -
                     sudo yum install -y nodejs
-                    sudo yum install npm
+                    sudo yum install npm -y
+                    echo npminstalldone >> ./logs.txt
                     sudo npm i
+                    echo depsdone >> ./logs.txt
                     screen
                     sudo npm run build
-                    mv build/ s3Obj/
-                    cd s3Obj
+                    echo buildcomplete >> ./logs.txt
+                    sudo mv ./build/ ../s3Obj/
+                    cd ../s3Obj
                     zip -r deploytobean.zip *
                     aws s3 cp ./deploytobean.zip s3://newsburstbucket2
             Tags: [
-                { "Key": "Name", "Value": "reactbuildec2" } ]
+                { "Key": "Name", "Value": "reactbuildec21122" } ]

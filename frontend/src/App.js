@@ -28,6 +28,7 @@ const App = () => {
                 </PrivateRoute>
               }
             />
+            {console.log("ENV VARS: ", process.env)}
             <Route path="/" element={<Login />} />
             <Route path="/register" element={<Register />} />
             <Route path="/home" element={<Home />} />
