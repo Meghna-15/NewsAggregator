@@ -58,7 +58,7 @@ const NavBar = () => {
                 <Button color="white" onClick={() => navigate("/categories")}>
                   Categories
                 </Button>
-                <Button color="white" onClick={() => navigate("/logout")}>
+                <Button color="white" onClick={() => navigate("/")}>
                   Logout
                 </Button>
               </ButtonGroup>

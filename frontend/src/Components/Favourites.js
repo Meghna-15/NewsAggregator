@@ -24,16 +24,11 @@ const Favorite = () => {
     if (poolcred !== "") {
       getSession().then(async ({ user }) => {
         axios
-          .get(
-            "https://" +
-              poolcred.API_BASE_URL +
-              ".execute-api.us-east-1.amazonaws.com/Development/users/favnews",
-            {
-              params: {
-                email: Cookies.get("email"),
-              },
-            }
-          )
+          .get(process.env.REACT_APP_BASE_URL + "/users/favnews", {
+            params: {
+              email: Cookies.get("email"),
+            },
+          })
           .then((response) => {
             console.log(response.data.data);
             setPost(response.data.data);

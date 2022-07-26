@@ -23,16 +23,11 @@ const NewsCard = () => {
     if (poolcred !== "") {
       getSession().then(async ({ user }) => {
         axios
-          .get(
-            "https://" +
-              poolcred.API_BASE_URL +
-              ".execute-api.us-east-1.amazonaws.com/Development/users/news",
-            {
-              params: {
-                email: Cookies.get("email"),
-              },
-            }
-          )
+          .get(process.env.REACT_APP_BASE_URL + "/users/news", {
+            params: {
+              email: Cookies.get("email"),
+            },
+          })
           .then((response) => {
             console.log(response.data.data);
             setPost(response.data.data);
@@ -47,15 +42,10 @@ const NewsCard = () => {
   const addIntoFavorite = (article) => {
     console.log(Cookies.get("email"));
     axios
-      .post(
-        "https://" +
-          poolcred.API_BASE_URL +
-          ".execute-api.us-east-1.amazonaws.com/Development/users/favnews",
-        {
-          email: Cookies.get("email"),
-          article_id: article._id,
-        }
-      )
+      .post(process.env.REACT_APP_BASE_URL + "/users/favnews", {
+        email: Cookies.get("email"),
+        article_id: article._id,
+      })
       .then((response) => {
         console.log(response);
       })

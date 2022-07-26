@@ -54,15 +54,10 @@ const Categories = () => {
 
   const saveFavorites = async () => {
     axios
-      .post(
-        "https://" +
-          poolcred.API_BASE_URL +
-          ".execute-api.us-east-1.amazonaws.com/Development/users/favtopics",
-        {
-          email: Cookies.get("email"),
-          subscriptions: selectedCategories,
-        }
-      )
+      .post(process.env.REACT_APP_BASE_URL + "/users/favtopics", {
+        email: Cookies.get("email"),
+        subscriptions: selectedCategories,
+      })
       .then((response) => {
         console.log(response);
       })

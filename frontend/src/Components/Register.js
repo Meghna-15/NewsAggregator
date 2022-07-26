@@ -109,12 +109,9 @@ const Register = () => {
         });
       } else {
         axios
-          .post(
-            "https://" +
-              poolCredentials.API_BASE_URL +
-              ".execute-api.us-east-1.amazonaws.com/Development/users/initialuser",
-            { email: email }
-          )
+          .post(process.env.REACT_APP_BASE_URL + "/users/initialuser", {
+            email: email,
+          })
           .then((response) => {
             console.log(response.data);
           })
