@@ -1,0 +1,142 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: AWS NewsBurst
+Parameters:
+    apiid:
+        Type: String
+        Default: lol1234
+
+Resources:
+    EC2VPC:
+        Type: AWS::EC2::VPC
+        Properties:
+            CidrBlock: 10.0.0.0/16
+            EnableDnsSupport: true
+            EnableDnsHostnames: true
+            InstanceTenancy: default
+            Tags:
+                - Key: Name
+                  Value: VPC for build EC2
+
+    InternetGateway:
+        Type: AWS::EC2::InternetGateway
+
+    VPCGatewayAttachment:
+        Type: AWS::EC2::VPCGatewayAttachment
+        Properties:
+            VpcId: !Ref EC2VPC
+            InternetGatewayId: !Ref InternetGateway
+
+    PublicSubnetA:
+        Type: AWS::EC2::Subnet
+        Properties:
+            AvailabilityZone: us-east-1a
+            VpcId: !Ref EC2VPC
+            CidrBlock: 10.0.1.0/24
+            MapPublicIpOnLaunch: true
+            Tags:
+                - Key: Name
+                  Value: Public Subnet A
+
+    PublicSubnetB:
+        Type: AWS::EC2::Subnet
+        Properties:
+            AvailabilityZone: us-east-1b
+            VpcId: !Ref EC2VPC
+            CidrBlock: 10.0.2.0/24
+            MapPublicIpOnLaunch: true
+            Tags:
+                - Key: Name
+                  Value: Public Subnet B
+
+    RouteTable:
+        Type: AWS::EC2::RouteTable
+        Properties:
+            VpcId: !Ref EC2VPC
+            Tags:
+                - Key: Name
+                  Value: Route Table for G42
+
+    InternetRoute:
+        Type: AWS::EC2::Route
+        DependsOn: VPCGatewayAttachment
+        Properties:
+            DestinationCidrBlock: 0.0.0.0/0
+            GatewayId: !Ref InternetGateway
+            RouteTableId: !Ref RouteTable
+
+    SubnetARouteTableAssociation:
+        Type: AWS::EC2::SubnetRouteTableAssociation
+        Properties:
+            RouteTableId: !Ref RouteTable
+            SubnetId: !Ref PublicSubnetA
+
+    EC2SecurityGroup:
+        Type: AWS::EC2::SecurityGroup
+        Properties:
+            GroupName: "react-sg"
+            GroupDescription: "Security Group for build instance"
+            VpcId: !Ref EC2VPC
+            SecurityGroupIngress:
+
+                - IpProtocol: tcp
+                  FromPort: 80
+                  ToPort: 80
+                  CidrIp: 0.0.0.0/0
+
+                - IpProtocol: tcp
+                  FromPort: 22
+                  ToPort: 22
+                  CidrIp: 0.0.0.0/0
+
+                - IpProtocol: tcp
+                  FromPort: 5000
+                  ToPort: 5000
+                  CidrIp: 0.0.0.0/0
+            Tags: [
+                { "Key": "Name", "Value": "reactbuildsg" } ]
+
+    EC2Instance1:
+        Type: AWS::EC2::Instance
+        Properties:
+            SubnetId: !Ref PublicSubnetA
+            AvailabilityZone: us-east-1a
+            ImageId: ami-0022f774911c1d690
+            InstanceType: t2.micro
+            SecurityGroupIds:
+                - !Ref EC2SecurityGroup
+            BlockDeviceMappings:
+                - DeviceName: /dev/xvda
+                  Ebs:
+                      VolumeSize: 8
+            KeyName: project
+            UserData:
+                Fn::Base64: !Sub |
+                    #!/bin/bash
+                    sudo yum update -y
+                    sudo yum install git -y
+                    mkdir /home/ec2-user/cloud
+                    cd /home/ec2-user/cloud
+                    git clone https://qsyed:glpat-o3Ysztbru2T4vc4L1FGE@git.cs.dal.ca/courses/2022-summer/csci4145-5409/group-37.git
+                    cd /group-37
+                    echo REACT_APP_BASE_URL=https://${!Ref }.execute-api.us-east-1.amazonaws.com/Development > .env.production.local
+                    yum install -y gcc-c++ make
+                    yum install curl -y
+                    yum install zip unzip
+                    curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
+                    unzip awscliv2.zip
+                    sudo ./aws/install
+                    export AWS_ACCESS_KEY_ID=ASIA3RWEBYW3GJSWVQVL
+                    export AWS_SECRET_ACCESS_KEY=ibzw9QAm6MhErQhD6CJrEP1N+Nk8/CZQczwWxD/+
+                    export AWS_SESSION_TOKEN=FwoGZXIvYXdzEIv//////////wEaDNBdZ5kabXP4Ysd4dSLAAQ/lNeRvGx+7PJxR+IizAn26ARjOstPC0SYz3vBZQBeF97fS6jI85Ivqi2jDDdePffP8jPEdpGn+rVvGloMC11P/ygyXFoeH8bVPnxLk82NwoY9dTuDp8l462gBT0co0o5zfTInPFqzSvlSdMtQoEiQIiut3fr2JDJEkzvm+1ps5kvjbAvMoBz3DjiZDuFpsfDqS8cXrMey4Du/8yqdVaTmSU7AMP+t1gDDLyhOu/JfTJI4jpbYMQwkfqd5urv4uAiiG1ICXBjIty4qtuOptGlZTtygtHeMWPVh1peZsq+TaloPt0Rfpfx05/Y3cxhtjNrO24Z+F
+                    curl -sL https://rpm.nodesource.com/setup_16.x | sudo -E bash -
+                    sudo yum install -y nodejs
+                    sudo yum install npm
+                    sudo npm i
+                    screen
+                    sudo npm run build
+                    mv build/ s3Obj/
+                    cd s3Obj
+                    zip -r deploytobean.zip *
+                    aws s3 cp ./deploytobean.zip s3://newsburstbucket2
+            Tags: [
+                { "Key": "Name", "Value": "reactbuildec2" } ]

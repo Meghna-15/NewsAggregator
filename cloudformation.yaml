@@ -1,0 +1,684 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: AWS NewsBurst
+Parameters:
+    S3SourceBucket:
+        Type: String
+        Default: newsburstbucket2
+
+    NewsBurstUserPoolName:
+        Type: String
+        Default: NewsBurstUserPool2
+    NewsBurstUserPoolClientName:
+        Type: String
+        Default: NewsBurstUserPoolClient1
+    NewsBurstUserPoolDomainName:
+        Type: String
+        Default: newsburstdomain2
+
+    NewsBurstSecretsName:
+        Type: String
+        Default: newsburstsecrets7
+
+    NewsBurstBeanStalk:
+        Type: String
+        Default: newsburst-beanstalk-backend10
+    ApiGatewayName:
+        Type: String
+        Default: NewsBurstApiGateway3
+
+    FetchArticleLayer:
+        Type: String
+        Default: newscatcherlayer4
+    LayerZip:
+        Type: String
+        Default: python.zip
+
+    FetchArticleLambda:
+        Type: String
+        Default: pullArticles8
+    AddFavTopics:
+        Type: String
+        Default: addFavTopics3
+    GetFavNews:
+        Type: String
+        Default: getFavNews3
+    AddFavNews:
+        Type: String
+        Default: addFavNews3
+    AddInitialUser:
+        Type: String
+        Default: addInitialUser3
+    GetSubscriptions:
+        Type: String
+        Default: getSubscriptions3
+    GetNews:
+        Type: String
+        Default: getNews3
+
+    Routine:
+        Type: String
+        Default: newsroutine9
+
+    ArticleTable:
+        Type: String
+        Default: articles4
+    UserTable:
+        Type: String
+        Default: users4
+
+Resources:
+    NewsArticleLayer:
+        Type: AWS::Lambda::LayerVersion
+        Properties:
+            LayerName: !Ref FetchArticleLayer
+            CompatibleRuntimes:
+                - python3.9
+            Content:
+                S3Bucket: !Ref S3SourceBucket
+                S3Key: !Ref LayerZip
+    ArticlesTable:
+        Type: AWS::DynamoDB::Table
+        Properties:
+          TableName: !Ref ArticleTable
+          BillingMode: PAY_PER_REQUEST
+          AttributeDefinitions:
+            - AttributeName: _id
+              AttributeType: S
+          KeySchema:
+            - AttributeName: _id
+              KeyType: HASH
+        DeletionPolicy: Delete
+    UsersTable:
+        Type: AWS::DynamoDB::Table
+        Properties:
+          TableName: !Ref UserTable
+          BillingMode: PAY_PER_REQUEST
+          AttributeDefinitions:
+            - AttributeName: _id
+              AttributeType: S
+          KeySchema:
+            - AttributeName: _id
+              KeyType: HASH
+        DeletionPolicy: Delete
+    FetchArticles:
+        Type: AWS::Lambda::Function
+        Properties:
+            Architectures:
+                - arm64
+            Runtime: python3.9
+            Code:
+                S3Bucket: !Ref S3SourceBucket
+                S3Key: fetch-articles.zip
+            Handler: fetch-articles.lambda_handler
+            Description: Python Lambda Demo
+            FunctionName: !Ref FetchArticleLambda
+            Timeout: 600
+            Role: arn:aws:iam::793906365878:role/LabRole
+            Layers:
+                - !Ref NewsArticleLayer
+        DeletionPolicy: Delete
+    ScheduledRule:
+        Type: AWS::Events::Rule
+        Properties:
+            Description: "ScheduledRule"
+            ScheduleExpression: "rate(1 hour)"
+            State: "ENABLED"
+            Name: !Ref Routine
+            Targets:
+                - Arn: !GetAtt
+                      - FetchArticles
+                      - Arn
+                  Id: "TargetFunctionV1"
+        DeletionPolicy: Delete
+    PermissionForEventsToInvokeLambda:
+        Type: AWS::Lambda::Permission
+        Properties:
+            FunctionName: !Ref FetchArticles
+            Action: "lambda:InvokeFunction"
+            Principal: "events.amazonaws.com"
+            SourceArn:
+                Fn::GetAtt:
+                    - "ScheduledRule"
+                    - "Arn"
+    UserPool:
+        Type: AWS::Cognito::UserPool
+        Properties:
+            UserPoolName: !Sub ${NewsBurstUserPoolName}
+            AdminCreateUserConfig:
+                AllowAdminCreateUserOnly: False
+            AutoVerifiedAttributes:
+                - email
+            EmailConfiguration:
+                EmailSendingAccount: "COGNITO_DEFAULT"
+            VerificationMessageTemplate:
+                DefaultEmailOption: "CONFIRM_WITH_LINK"
+            EmailVerificationSubject: "Your verification link for NewsBurstApplication"
+            MfaConfiguration: "OFF"
+            Policies:
+                PasswordPolicy:
+                    MinimumLength: 8
+                    RequireLowercase: True
+                    RequireNumbers: True
+                    RequireSymbols: True
+                    RequireUppercase: True
+            Schema:
+              - Name: email
+                AttributeDataType: String
+                Mutable: true
+                Required: true
+              - Name: username
+                AttributeDataType: String
+                Mutable: true
+                Required: false
+              - Name: country
+                AttributeDataType: String
+                Mutable: true
+                Required: false
+            UsernameAttributes: [email]
+            UsernameConfiguration:
+                CaseSensitive: False
+            UserPoolAddOns:
+                AdvancedSecurityMode: "OFF"
+    UserPoolClient:
+        Type: AWS::Cognito::UserPoolClient
+        Properties:
+            ClientName: !Sub ${NewsBurstUserPoolClientName}
+            GenerateSecret: false
+            PreventUserExistenceErrors: "ENABLED"
+            UserPoolId: !Ref UserPool
+    UserPoolDomain:
+        Type: AWS::Cognito::UserPoolDomain
+        Properties:
+            Domain: !Sub ${NewsBurstUserPoolDomainName}
+            UserPoolId: !Ref UserPool
+    SecretsManager:
+        Type: "AWS::SecretsManager::Secret"
+        DependsOn:
+          - UserPool
+          - UserPoolClient
+        Properties:
+          Name: !Sub ${NewsBurstSecretsName}
+          SecretString:
+            "Fn::Join":
+              - ""
+              - - '{"USER_POOL_ID":"'
+                - Ref: UserPool
+                - '","USER_POOL_CLIENT_ID":"'
+                - Ref: UserPoolClient
+                - '"}'
+    ApiGatewayRestApi:
+        Type: "AWS::ApiGateway::RestApi"
+        Properties:
+            Name: !Ref ApiGatewayName
+            ApiKeySourceType: "HEADER"
+            EndpointConfiguration:
+                Types:
+                    - "REGIONAL"
+    ApiGatewayResource1:
+        Type: "AWS::ApiGateway::Resource"
+        Properties:
+            RestApiId: !Ref ApiGatewayRestApi
+            PathPart: "users"
+            ParentId: !GetAtt
+                - ApiGatewayRestApi
+                - RootResourceId
+    ApiGatewayResource2:
+        Type: "AWS::ApiGateway::Resource"
+        Properties:
+            RestApiId: !Ref ApiGatewayRestApi
+            PathPart: "news"
+            ParentId: !GetAtt
+                - ApiGatewayRestApi
+                - RootResourceId
+    ApiGatewayResource11:
+        Type: "AWS::ApiGateway::Resource"
+        Properties:
+            RestApiId: !Ref ApiGatewayRestApi
+            PathPart: "favtopics"
+            ParentId: !Ref ApiGatewayResource1
+    ApiGatewayResource12:
+        Type: "AWS::ApiGateway::Resource"
+        Properties:
+            RestApiId: !Ref ApiGatewayRestApi
+            PathPart: "favnews"
+            ParentId: !Ref ApiGatewayResource1
+    ApiGatewayResource13:
+        Type: "AWS::ApiGateway::Resource"
+        Properties:
+            RestApiId: !Ref ApiGatewayRestApi
+            PathPart: "initialuser"
+            ParentId: !Ref ApiGatewayResource1
+    ApiGatewayResource14:
+        Type: "AWS::ApiGateway::Resource"
+        Properties:
+            RestApiId: !Ref ApiGatewayRestApi
+            PathPart: "news"
+            ParentId: !Ref ApiGatewayResource1
+    ApiGatewayResource21:
+        Type: "AWS::ApiGateway::Resource"
+        Properties:
+            RestApiId: !Ref ApiGatewayRestApi
+            PathPart: "news"
+            ParentId: !Ref ApiGatewayResource2
+    ApiGatewayMethod1:
+        Type: "AWS::ApiGateway::Method"
+        Properties:
+            HttpMethod: "POST"
+            ApiKeyRequired: false
+            AuthorizationType: NONE
+            MethodResponses:
+                - ResponseModels:
+                      "application/json": "Empty"
+                  ResponseParameters:
+                      "method.response.header.Access-Control-Allow-Origin": false
+                  StatusCode: "200"
+            Integration:
+                ConnectionType: INTERNET
+                Credentials: arn:aws:iam::793906365878:role/LabRole
+                IntegrationHttpMethod: POST
+                IntegrationResponses:
+                    - ResponseParameters:
+                          "method.response.header.Access-Control-Allow-Origin": "'*'"
+                      ResponseTemplates: { }
+                      StatusCode: "200"
+                PassthroughBehavior: WHEN_NO_MATCH
+                TimeoutInMillis: 29000
+                Type: AWS
+                Uri: !Sub 'arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${NewsBurstLambda111.Arn}/invocations'
+            OperationName: "lambda"
+            RestApiId: !Ref ApiGatewayRestApi
+            ResourceId: !Ref ApiGatewayResource11
+    ApiGatewayMethod2:
+        Type: "AWS::ApiGateway::Method"
+        Properties:
+            HttpMethod: "GET"
+            ApiKeyRequired: false
+            AuthorizationType: NONE
+            MethodResponses:
+                - ResponseModels:
+                      "application/json": "Empty"
+                  ResponseParameters:
+                      "method.response.header.Access-Control-Allow-Origin": false
+                  StatusCode: "200"
+            Integration:
+                ConnectionType: INTERNET
+                Credentials: arn:aws:iam::793906365878:role/LabRole
+                IntegrationHttpMethod: POST
+                PassthroughBehavior: WHEN_NO_MATCH
+                TimeoutInMillis: 29000
+                Type: AWS_PROXY
+                Uri: !Sub 'arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${NewsBurstLambda121.Arn}/invocations'
+            OperationName: "lambda"
+            RestApiId: !Ref ApiGatewayRestApi
+            ResourceId: !Ref ApiGatewayResource12
+    ApiGatewayMethod3:
+        Type: "AWS::ApiGateway::Method"
+        Properties:
+            HttpMethod: "POST"
+            ApiKeyRequired: false
+            AuthorizationType: NONE
+            MethodResponses:
+                - ResponseModels:
+                      "application/json": "Empty"
+                  ResponseParameters:
+                      "method.response.header.Access-Control-Allow-Origin": false
+                  StatusCode: "200"
+            Integration:
+                ConnectionType: INTERNET
+                Credentials: arn:aws:iam::793906365878:role/LabRole
+                IntegrationHttpMethod: POST
+                IntegrationResponses:
+                    - ResponseParameters:
+                          "method.response.header.Access-Control-Allow-Origin": "'*'"
+                      ResponseTemplates: { }
+                      StatusCode: "200"
+                PassthroughBehavior: WHEN_NO_MATCH
+                TimeoutInMillis: 29000
+                Type: AWS
+                Uri: !Sub 'arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${NewsBurstLambda122.Arn}/invocations'
+            OperationName: "lambda"
+            RestApiId: !Ref ApiGatewayRestApi
+            ResourceId: !Ref ApiGatewayResource12
+    ApiGatewayMethod4:
+        Type: "AWS::ApiGateway::Method"
+        Properties:
+            HttpMethod: "POST"
+            ApiKeyRequired: false
+            AuthorizationType: NONE
+            MethodResponses:
+                - ResponseModels:
+                      "application/json": "Empty"
+                  ResponseParameters:
+                      "method.response.header.Access-Control-Allow-Origin": false
+                  StatusCode: "200"
+            Integration:
+                ConnectionType: INTERNET
+                Credentials: arn:aws:iam::793906365878:role/LabRole
+                IntegrationHttpMethod: POST
+                IntegrationResponses:
+                    - ResponseParameters:
+                          "method.response.header.Access-Control-Allow-Origin": "'*'"
+                      ResponseTemplates: { }
+                      StatusCode: "200"
+                PassthroughBehavior: WHEN_NO_MATCH
+                TimeoutInMillis: 29000
+                Type: AWS
+                Uri: !Sub 'arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${NewsBurstLambda131.Arn}/invocations'
+            OperationName: "lambda"
+            RestApiId: !Ref ApiGatewayRestApi
+            ResourceId: !Ref ApiGatewayResource13
+    ApiGatewayMethod5:
+        Type: "AWS::ApiGateway::Method"
+        Properties:
+            HttpMethod: "GET"
+            ApiKeyRequired: false
+            AuthorizationType: NONE
+            MethodResponses:
+                - ResponseModels:
+                      "application/json": "Empty"
+                  ResponseParameters:
+                      "method.response.header.Access-Control-Allow-Origin": false
+                  StatusCode: "200"
+            Integration:
+                ConnectionType: INTERNET
+                Credentials: arn:aws:iam::793906365878:role/LabRole
+                IntegrationHttpMethod: POST
+                IntegrationResponses:
+                    - ResponseParameters:
+                          "method.response.header.Access-Control-Allow-Origin": "'*'"
+                      ResponseTemplates: { }
+                      StatusCode: "200"
+                PassthroughBehavior: WHEN_NO_MATCH
+                TimeoutInMillis: 29000
+                Type: AWS
+                Uri: !Sub 'arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${NewsBurstLambda211.Arn}/invocations'
+            OperationName: "lambda"
+            RestApiId: !Ref ApiGatewayRestApi
+            ResourceId: !Ref ApiGatewayResource21
+    ApiGatewayMethod6:
+        Type: "AWS::ApiGateway::Method"
+        Properties:
+            HttpMethod: "GET"
+            ApiKeyRequired: false
+            AuthorizationType: NONE
+            Integration:
+                ConnectionType: INTERNET
+                Credentials: arn:aws:iam::793906365878:role/LabRole
+                IntegrationHttpMethod: POST
+                PassthroughBehavior: WHEN_NO_MATCH
+                TimeoutInMillis: 29000
+                Type: AWS_PROXY
+                Uri: !Sub 'arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${NewsBurstLambda141.Arn}/invocations'
+            OperationName: "lambda"
+            RestApiId: !Ref ApiGatewayRestApi
+            ResourceId: !Ref ApiGatewayResource14
+    Deployment:
+        DependsOn: [ApiGatewayMethod1, ApiGatewayMethod2, ApiGatewayMethod3, ApiGatewayMethod4, ApiGatewayMethod5]
+        Type: 'AWS::ApiGateway::Deployment'
+        Properties:
+            RestApiId: !Ref ApiGatewayRestApi
+            Description: My deployment
+            StageName: Development
+    NewsBurstLambda111:
+        Type: AWS::Lambda::Function
+        Properties:
+            Code:
+                S3Bucket: !Ref S3SourceBucket
+                S3Key: update_subscriptions.zip
+            Description: AWS Lambda function
+            FunctionName: !Ref AddFavTopics
+            Handler: lambda_function.lambda_handler
+            MemorySize: 256
+            Role: arn:aws:iam::793906365878:role/LabRole
+            Runtime: python3.7
+            Timeout: 600
+    NewsBurstLambda121:
+        Type: AWS::Lambda::Function
+        Properties:
+            Code:
+                S3Bucket: !Ref S3SourceBucket
+                S3Key: get_favorite_articles.zip
+            Description: AWS Lambda function
+            FunctionName: !Ref GetFavNews
+            Handler: lambda_function.lambda_handler
+            MemorySize: 256
+            Role: arn:aws:iam::793906365878:role/LabRole
+            Runtime: python3.7
+            Timeout: 600
+    NewsBurstLambda122:
+        Type: AWS::Lambda::Function
+        Properties:
+            Code:
+                S3Bucket: !Ref S3SourceBucket
+                S3Key: add_favorite_article.zip
+            Description: AWS Lambda function
+            FunctionName: !Ref AddFavNews
+            Handler: lambda_function.lambda_handler
+            MemorySize: 256
+            Role: arn:aws:iam::793906365878:role/LabRole
+            Runtime: python3.7
+            Timeout: 600
+    NewsBurstLambda131:
+        Type: AWS::Lambda::Function
+        Properties:
+            Code:
+                S3Bucket: !Ref S3SourceBucket
+                S3Key: initialize_user.zip
+            Description: AWS Lambda function
+            FunctionName: !Ref AddInitialUser
+            Handler: lambda_function.lambda_handler
+            MemorySize: 256
+            Role: arn:aws:iam::793906365878:role/LabRole
+            Runtime: python3.7
+            Timeout: 600
+    NewsBurstLambda141:
+        Type: AWS::Lambda::Function
+        Properties:
+            Code:
+                S3Bucket: !Ref S3SourceBucket
+                S3Key: getSubscriptions.zip
+            Description: AWS Lambda function
+            FunctionName: !Ref GetSubscriptions
+            Handler: lambda_function.lambda_handler
+            MemorySize: 256
+            Role: arn:aws:iam::793906365878:role/LabRole
+            Runtime: python3.7
+            Timeout: 600
+    NewsBurstLambda211:
+        Type: AWS::Lambda::Function
+        Properties:
+            Code:
+                S3Bucket: !Ref S3SourceBucket
+                S3Key: getNews.zip
+            Description: AWS Lambda function
+            FunctionName: !Ref GetNews
+            Handler: lambda_function.lambda_handler
+            MemorySize: 256
+            Role: arn:aws:iam::793906365878:role/LabRole
+            Runtime: python3.7
+            Timeout: 600
+
+    EC2VPC:
+        Type: AWS::EC2::VPC
+        Properties:
+            CidrBlock: 10.0.0.0/16
+            EnableDnsSupport: true
+            EnableDnsHostnames: true
+            InstanceTenancy: default
+            Tags:
+                - Key: Name
+                  Value: VPC for build EC2
+
+    InternetGateway:
+        Type: AWS::EC2::InternetGateway
+
+    VPCGatewayAttachment:
+        Type: AWS::EC2::VPCGatewayAttachment
+        Properties:
+            VpcId: !Ref EC2VPC
+            InternetGatewayId: !Ref InternetGateway
+
+    PublicSubnetA:
+        Type: AWS::EC2::Subnet
+        Properties:
+            AvailabilityZone: us-east-1a
+            VpcId: !Ref EC2VPC
+            CidrBlock: 10.0.1.0/24
+            MapPublicIpOnLaunch: true
+            Tags:
+                - Key: Name
+                  Value: Public Subnet A
+
+    PublicSubnetB:
+        Type: AWS::EC2::Subnet
+        Properties:
+            AvailabilityZone: us-east-1b
+            VpcId: !Ref EC2VPC
+            CidrBlock: 10.0.2.0/24
+            MapPublicIpOnLaunch: true
+            Tags:
+                - Key: Name
+                  Value: Public Subnet B
+
+    RouteTable:
+        Type: AWS::EC2::RouteTable
+        Properties:
+            VpcId: !Ref EC2VPC
+            Tags:
+                - Key: Name
+                  Value: Route Table for G42
+
+    InternetRoute:
+        Type: AWS::EC2::Route
+        DependsOn: VPCGatewayAttachment
+        Properties:
+            DestinationCidrBlock: 0.0.0.0/0
+            GatewayId: !Ref InternetGateway
+            RouteTableId: !Ref RouteTable
+
+    SubnetARouteTableAssociation:
+        Type: AWS::EC2::SubnetRouteTableAssociation
+        Properties:
+            RouteTableId: !Ref RouteTable
+            SubnetId: !Ref PublicSubnetA
+
+    EC2SecurityGroup:
+        Type: AWS::EC2::SecurityGroup
+        Properties:
+            GroupName: "react-sg"
+            GroupDescription: "Security Group for build instance"
+            VpcId: !Ref EC2VPC
+            SecurityGroupIngress:
+
+                - IpProtocol: tcp
+                  FromPort: 80
+                  ToPort: 80
+                  CidrIp: 0.0.0.0/0
+
+                - IpProtocol: tcp
+                  FromPort: 22
+                  ToPort: 22
+                  CidrIp: 0.0.0.0/0
+
+                - IpProtocol: tcp
+                  FromPort: 5000
+                  ToPort: 5000
+                  CidrIp: 0.0.0.0/0
+            Tags: [
+                { "Key": "Name", "Value": "reactbuildsg" } ]
+
+    EC2Instance1:
+        Type: AWS::EC2::Instance
+        Properties:
+            SubnetId: !Ref PublicSubnetA
+            AvailabilityZone: us-east-1a
+            ImageId: ami-0022f774911c1d690
+            InstanceType: t2.micro
+            SecurityGroupIds:
+                - !Ref EC2SecurityGroup
+            BlockDeviceMappings:
+                - DeviceName: /dev/xvda
+                  Ebs:
+                      VolumeSize: 8
+            KeyName: project
+            UserData:
+                Fn::Base64: !Sub |
+                    #!/bin/bash
+                    sudo yum update -y
+                    sudo yum install git -y
+                    mkdir /home/ec2-user/cloud
+                    cd /home/ec2-user/cloud
+                    git clone https://qsyed:glpat-o3Ysztbru2T4vc4L1FGE@git.cs.dal.ca/courses/2022-summer/csci4145-5409/group-37.git
+                    cd /group-37
+                    echo REACT_APP_BASE_URL=https://${api_id}.execute-api.us-east-1.amazonaws.com/Development > .env.production.local
+                    yum install -y gcc-c++ make
+                    yum install curl -y
+                    yum install zip unzip
+                    curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
+                    unzip awscliv2.zip
+                    sudo ./aws/install
+                    export AWS_ACCESS_KEY_ID=ASIA3RWEBYW3GJSWVQVL
+                    export AWS_SECRET_ACCESS_KEY=ibzw9QAm6MhErQhD6CJrEP1N+Nk8/CZQczwWxD/+
+                    export AWS_SESSION_TOKEN=FwoGZXIvYXdzEIv//////////wEaDNBdZ5kabXP4Ysd4dSLAAQ/lNeRvGx+7PJxR+IizAn26ARjOstPC0SYz3vBZQBeF97fS6jI85Ivqi2jDDdePffP8jPEdpGn+rVvGloMC11P/ygyXFoeH8bVPnxLk82NwoY9dTuDp8l462gBT0co0o5zfTInPFqzSvlSdMtQoEiQIiut3fr2JDJEkzvm+1ps5kvjbAvMoBz3DjiZDuFpsfDqS8cXrMey4Du/8yqdVaTmSU7AMP+t1gDDLyhOu/JfTJI4jpbYMQwkfqd5urv4uAiiG1ICXBjIty4qtuOptGlZTtygtHeMWPVh1peZsq+TaloPt0Rfpfx05/Y3cxhtjNrO24Z+F
+                    curl -sL https://rpm.nodesource.com/setup_16.x | sudo -E bash -
+                    sudo yum install -y nodejs
+                    sudo yum install npm
+                    sudo npm i
+                    screen
+                    sudo npm run build
+                    mv build/ s3Obj/
+                    cd s3Obj
+                    zip -r deploytobean.zip *
+                    aws s3 cp ./deploytobean.zip s3://newsburstbucket2
+            Tags: [
+                { "Key": "Name", "Value": "reactbuildec2" } ]
+    NewsApp:
+        Type: AWS::ElasticBeanstalk::Application
+        Properties:
+            ApplicationName: !Ref NewsBurstBeanStalk
+            Description: AWS Elastic Beanstalk Sample Application
+    NewsAppVersion:
+        Type: AWS::ElasticBeanstalk::ApplicationVersion
+        Properties:
+            ApplicationName:
+                Ref: NewsApp
+            Description: AWS ElasticBeanstalk Sample Application Version
+            SourceBundle:
+                S3Bucket: newsburstbucket2
+                S3Key: deploytobean.zip
+    NewsConfigurationTemplate:
+        Type: AWS::ElasticBeanstalk::ConfigurationTemplate
+        Properties:
+            ApplicationName:
+                Ref: NewsApp
+            Description: AWS ElasticBeanstalk Configuration Template
+            OptionSettings:
+                - Namespace: aws:elasticbeanstalk:environment
+                  OptionName: EnvironmentType
+                  Value: LoadBalanced
+                - Namespace: aws:autoscaling:launchconfiguration
+                  OptionName: IamInstanceProfile
+                  Value:
+                      Ref: MyInstanceProfile
+                - Namespace: aws:elasticbeanstalk:environment
+                  OptionName: ServiceRole
+                  Value: 'LabRole'
+                - Namespace: aws:elasticbeanstalk:application:environment
+                  OptionName: REACT_APP_BASE_URL
+                  Value: !Ref ApiGatewayRestApi
+            SolutionStackName: 64bit Amazon Linux 2 v5.5.4 running Node.js 16
+    NewsAppEnvironment:
+        Type: AWS::ElasticBeanstalk::Environment
+        Properties:
+            ApplicationName:
+                Ref: NewsApp
+            Description: News application on AWS Beanstalk
+            TemplateName:
+                Ref: NewsConfigurationTemplate
+            VersionLabel:
+                Ref: NewsAppVersion
+    MyInstanceProfile:
+        Type: AWS::IAM::InstanceProfile
+        Properties:
+            Roles:
+                - LabRole
