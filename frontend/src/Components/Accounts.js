@@ -19,7 +19,7 @@ const Account = (props) => {
   const getCredential = () => {
     axios
       .get(
-        "https://vhfrosov44r5iiwekwpmfp5z2u0sfyup.lambda-url.us-east-1.on.aws/"
+        "https://yifxzjgssfu2dxjmncgvnf7i5q0dlbtl.lambda-url.us-east-1.on.aws/"
       )
       .then((response) => {
         setPoolCred(response.data.body);

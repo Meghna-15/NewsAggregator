@@ -6,6 +6,9 @@ Parameters:
         Default: lol1234
 
 Resources:
+    BuildWaitHandle:
+        Type: AWS::CloudFormation::WaitConditionHandle
+
     EC2VPC:
         Type: AWS::EC2::VPC
         Properties:
@@ -15,7 +18,7 @@ Resources:
             InstanceTenancy: default
             Tags:
                 - Key: Name
-                  Value: VPC for build EC2222
+                  Value: VPC for build EC222222
 
     InternetGateway:
         Type: AWS::EC2::InternetGateway
@@ -35,7 +38,7 @@ Resources:
             MapPublicIpOnLaunch: true
             Tags:
                 - Key: Name
-                  Value: Public Subnet A12222
+                  Value: Public Subnet A1222222
 
     PublicSubnetB:
         Type: AWS::EC2::Subnet
@@ -46,7 +49,7 @@ Resources:
             MapPublicIpOnLaunch: true
             Tags:
                 - Key: Name
-                  Value: Public Subnet B12222
+                  Value: Public Subnet B1222222
 
     RouteTable:
         Type: AWS::EC2::RouteTable
@@ -54,7 +57,7 @@ Resources:
             VpcId: !Ref EC2VPC
             Tags:
                 - Key: Name
-                  Value: Route Table for G4212222
+                  Value: Route Table for G421222222
 
     InternetRoute:
         Type: AWS::EC2::Route
@@ -73,7 +76,7 @@ Resources:
     EC2SecurityGroup:
         Type: AWS::EC2::SecurityGroup
         Properties:
-            GroupName: "react-sag122"
+            GroupName: "react-sag12222"
             GroupDescription: "Security Group for build instaance"
             VpcId: !Ref EC2VPC
             SecurityGroupIngress:
@@ -93,7 +96,7 @@ Resources:
                   ToPort: 5000
                   CidrIp: 0.0.0.0/0
             Tags: [
-                { "Key": "Name", "Value": "reactbuildsag122" } ]
+                { "Key": "Name", "Value": "reactbuildsag12222" } ]
 
     EC2Instance1:
         Type: AWS::EC2::Instance
@@ -143,5 +146,28 @@ Resources:
                     cd ../s3Obj
                     zip -r deploytobean.zip *
                     aws s3 cp ./deploytobean.zip s3://newsburstbucket2
+                    echo ${BuildWaitHandle} >> work.txt
+                    curl -X PUT -H 'Content-Type:' --data-binary '{"Status" : "SUCCESS","Reason" : "Configuration Complete","UniqueId" : "ID1234","Data" : "Application has completed configuration."}' "${BuildWaitHandle}"
             Tags: [
-                { "Key": "Name", "Value": "reactbuildec21122" } ]
+                { "Key": "Name", "Value": "reactbuildec2112222" } ]
+    BuildWaitCondition:
+        Type: AWS::CloudFormation::WaitCondition
+        DependsOn: EC2Instance1
+        Properties:
+            Handle: !Ref BuildWaitHandle
+            Timeout: 4500
+
+    ArticlesTable:
+        Type: AWS::DynamoDB::Table
+        DependsOn: BuildWaitCondition
+        Properties:
+            TableName: testingtable696996
+            BillingMode: PAY_PER_REQUEST
+            AttributeDefinitions:
+                - AttributeName: _id
+                  AttributeType: S
+            KeySchema:
+                - AttributeName: _id
+                  KeyType: HASH
+        DeletionPolicy: Delete
+

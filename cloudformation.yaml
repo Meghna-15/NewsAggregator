@@ -7,66 +7,68 @@ Parameters:
 
     NewsBurstUserPoolName:
         Type: String
-        Default: NewsBurstUserPool2
+        Default: NewsBurstUserPool71
     NewsBurstUserPoolClientName:
         Type: String
-        Default: NewsBurstUserPoolClient1
+        Default: NewsBurstUserPoolClient71
     NewsBurstUserPoolDomainName:
         Type: String
-        Default: newsburstdomain2
+        Default: newsburstdomain71
 
     NewsBurstSecretsName:
         Type: String
-        Default: newsburstsecrets7
+        Default: newsburstsecrets71
 
     NewsBurstBeanStalk:
         Type: String
-        Default: newsburst-beanstalk-backend10
+        Default: newsburst-beanstalk-backend71
     ApiGatewayName:
         Type: String
-        Default: NewsBurstApiGateway3
+        Default: NewsBurstApiGateway71
 
     FetchArticleLayer:
         Type: String
-        Default: newscatcherlayer4
+        Default: newscatcherlayer71
     LayerZip:
         Type: String
         Default: python.zip
 
     FetchArticleLambda:
         Type: String
-        Default: pullArticles8
+        Default: pullArticles71
     AddFavTopics:
         Type: String
-        Default: addFavTopics3
+        Default: addFavTopics71
     GetFavNews:
         Type: String
-        Default: getFavNews3
+        Default: getFavNews71
     AddFavNews:
         Type: String
-        Default: addFavNews3
+        Default: addFavNews71
     AddInitialUser:
         Type: String
-        Default: addInitialUser3
+        Default: addInitialUser71
     GetSubscriptions:
         Type: String
-        Default: getSubscriptions3
+        Default: getSubscriptions71
     GetNews:
         Type: String
-        Default: getNews3
+        Default: getNews71
 
     Routine:
         Type: String
-        Default: newsroutine9
+        Default: newsroutine71
 
     ArticleTable:
         Type: String
-        Default: articles4
+        Default: articles71
     UserTable:
         Type: String
-        Default: users4
+        Default: users71
 
 Resources:
+    BuildWaitHandle:
+        Type: AWS::CloudFormation::WaitConditionHandle
     NewsArticleLayer:
         Type: AWS::Lambda::LayerVersion
         Properties:
@@ -498,6 +500,7 @@ Resources:
             Runtime: python3.7
             Timeout: 600
 
+
     EC2VPC:
         Type: AWS::EC2::VPC
         Properties:
@@ -507,7 +510,7 @@ Resources:
             InstanceTenancy: default
             Tags:
                 - Key: Name
-                  Value: VPC for build EC2
+                  Value: VPC71
 
     InternetGateway:
         Type: AWS::EC2::InternetGateway
@@ -527,7 +530,7 @@ Resources:
             MapPublicIpOnLaunch: true
             Tags:
                 - Key: Name
-                  Value: Public Subnet A
+                  Value: SubnetA71
 
     PublicSubnetB:
         Type: AWS::EC2::Subnet
@@ -538,7 +541,7 @@ Resources:
             MapPublicIpOnLaunch: true
             Tags:
                 - Key: Name
-                  Value: Public Subnet B
+                  Value: SubnetB71
 
     RouteTable:
         Type: AWS::EC2::RouteTable
@@ -546,7 +549,7 @@ Resources:
             VpcId: !Ref EC2VPC
             Tags:
                 - Key: Name
-                  Value: Route Table for G42
+                  Value: RT71
 
     InternetRoute:
         Type: AWS::EC2::Route
@@ -565,7 +568,7 @@ Resources:
     EC2SecurityGroup:
         Type: AWS::EC2::SecurityGroup
         Properties:
-            GroupName: "react-sg"
+            GroupName: "react-sg71"
             GroupDescription: "Security Group for build instance"
             VpcId: !Ref EC2VPC
             SecurityGroupIngress:
@@ -585,60 +588,75 @@ Resources:
                   ToPort: 5000
                   CidrIp: 0.0.0.0/0
             Tags: [
-                { "Key": "Name", "Value": "reactbuildsg" } ]
+                { "Key": "Name", "Value": "reactbuildsg71" } ]
 
     EC2Instance1:
-        Type: AWS::EC2::Instance
-        Properties:
-            SubnetId: !Ref PublicSubnetA
-            AvailabilityZone: us-east-1a
-            ImageId: ami-0022f774911c1d690
-            InstanceType: t2.micro
-            SecurityGroupIds:
-                - !Ref EC2SecurityGroup
-            BlockDeviceMappings:
-                - DeviceName: /dev/xvda
-                  Ebs:
-                      VolumeSize: 8
-            KeyName: project
-            UserData:
-                Fn::Base64: !Sub |
-                    #!/bin/bash
-                    sudo yum update -y
-                    sudo yum install git -y
-                    mkdir /home/ec2-user/cloud
-                    cd /home/ec2-user/cloud
-                    git clone https://qsyed:glpat-o3Ysztbru2T4vc4L1FGE@git.cs.dal.ca/courses/2022-summer/csci4145-5409/group-37.git
-                    cd /group-37
-                    echo REACT_APP_BASE_URL=https://${api_id}.execute-api.us-east-1.amazonaws.com/Development > .env.production.local
-                    yum install -y gcc-c++ make
-                    yum install curl -y
-                    yum install zip unzip
-                    curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
-                    unzip awscliv2.zip
-                    sudo ./aws/install
-                    export AWS_ACCESS_KEY_ID=ASIA3RWEBYW3GJSWVQVL
-                    export AWS_SECRET_ACCESS_KEY=ibzw9QAm6MhErQhD6CJrEP1N+Nk8/CZQczwWxD/+
-                    export AWS_SESSION_TOKEN=FwoGZXIvYXdzEIv//////////wEaDNBdZ5kabXP4Ysd4dSLAAQ/lNeRvGx+7PJxR+IizAn26ARjOstPC0SYz3vBZQBeF97fS6jI85Ivqi2jDDdePffP8jPEdpGn+rVvGloMC11P/ygyXFoeH8bVPnxLk82NwoY9dTuDp8l462gBT0co0o5zfTInPFqzSvlSdMtQoEiQIiut3fr2JDJEkzvm+1ps5kvjbAvMoBz3DjiZDuFpsfDqS8cXrMey4Du/8yqdVaTmSU7AMP+t1gDDLyhOu/JfTJI4jpbYMQwkfqd5urv4uAiiG1ICXBjIty4qtuOptGlZTtygtHeMWPVh1peZsq+TaloPt0Rfpfx05/Y3cxhtjNrO24Z+F
-                    curl -sL https://rpm.nodesource.com/setup_16.x | sudo -E bash -
-                    sudo yum install -y nodejs
-                    sudo yum install npm
-                    sudo npm i
-                    screen
-                    sudo npm run build
-                    mv build/ s3Obj/
-                    cd s3Obj
-                    zip -r deploytobean.zip *
-                    aws s3 cp ./deploytobean.zip s3://newsburstbucket2
-            Tags: [
-                { "Key": "Name", "Value": "reactbuildec2" } ]
+      Type: AWS::EC2::Instance
+      Properties:
+        SubnetId: !Ref PublicSubnetA
+        AvailabilityZone: us-east-1a
+        ImageId: ami-0022f774911c1d690
+        InstanceType: t2.small
+        SecurityGroupIds:
+          - !Ref EC2SecurityGroup
+        BlockDeviceMappings:
+          - DeviceName: /dev/xvda
+            Ebs:
+              VolumeSize: 8
+        KeyName: project
+        UserData:
+          Fn::Base64: !Sub |
+            #!/bin/bash
+            sudo yum update -y
+            sudo yum install git -y
+            mkdir /home/ec2-user/cloud
+            cd /home/ec2-user/cloud
+            git clone https://qsyed:glpat-o3Ysztbru2T4vc4L1FGE@git.cs.dal.ca/courses/2022-summer/csci4145-5409/group-37.git
+            cd ./group-37/frontend
+            echo REACT_APP_BASE_URL=https://${ApiGatewayRestApi}.execute-api.us-east-1.amazonaws.com/Development > .env.production.local
+            sudo yum install -y gcc-c++ make
+            sudo yum install curl -y
+            sudo yum install zip unzip -y
+            sudo curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
+            unzip awscliv2.zip
+            sudo ./aws/install
+            touch logs.txt
+            echo awsinstalldone >> ./logs.txt
+            export AWS_ACCESS_KEY_ID=ASIA3RWEBYW3GJSWVQVL
+            export AWS_SECRET_ACCESS_KEY=ibzw9QAm6MhErQhD6CJrEP1N+Nk8/CZQczwWxD/+
+            export AWS_SESSION_TOKEN=FwoGZXIvYXdzEIv//////////wEaDNBdZ5kabXP4Ysd4dSLAAQ/lNeRvGx+7PJxR+IizAn26ARjOstPC0SYz3vBZQBeF97fS6jI85Ivqi2jDDdePffP8jPEdpGn+rVvGloMC11P/ygyXFoeH8bVPnxLk82NwoY9dTuDp8l462gBT0co0o5zfTInPFqzSvlSdMtQoEiQIiut3fr2JDJEkzvm+1ps5kvjbAvMoBz3DjiZDuFpsfDqS8cXrMey4Du/8yqdVaTmSU7AMP+t1gDDLyhOu/JfTJI4jpbYMQwkfqd5urv4uAiiG1ICXBjIty4qtuOptGlZTtygtHeMWPVh1peZsq+TaloPt0Rfpfx05/Y3cxhtjNrO24Z+F
+            curl -sL https://rpm.nodesource.com/setup_16.x | sudo -E bash -
+            sudo yum install -y nodejs
+            sudo yum install npm -y
+            echo npminstalldone >> ./logs.txt
+            sudo npm i
+            echo depsdone >> ./logs.txt
+            screen
+            sudo npm run build
+            echo buildcomplete >> ./logs.txt
+            sudo mv ./build/ ../s3Obj/
+            cd ../s3Obj
+            zip -r deploytobean.zip *
+            aws s3 cp ./deploytobean.zip s3://newsburstbucket2
+            echo ${BuildWaitHandle} >> ./work.txt
+            curl -X PUT -H 'Content-Type:' --data-binary '{"Status" : "SUCCESS","Reason" : "Configuration Complete","UniqueId" : "ID1234","Data" : "Application has completed configuration."}' "${BuildWaitHandle}"
+        Tags: [
+          { "Key": "Name", "Value": "reactbuildec71" } ]
+    BuildWaitCondition:
+      Type: AWS::CloudFormation::WaitCondition
+      DependsOn: EC2Instance1
+      Properties:
+        Handle: !Ref BuildWaitHandle
+        Timeout: 4500
     NewsApp:
         Type: AWS::ElasticBeanstalk::Application
+        DependsOn: BuildWaitCondition
         Properties:
             ApplicationName: !Ref NewsBurstBeanStalk
             Description: AWS Elastic Beanstalk Sample Application
     NewsAppVersion:
         Type: AWS::ElasticBeanstalk::ApplicationVersion
+        DependsOn: BuildWaitCondition
         Properties:
             ApplicationName:
                 Ref: NewsApp
@@ -648,6 +666,7 @@ Resources:
                 S3Key: deploytobean.zip
     NewsConfigurationTemplate:
         Type: AWS::ElasticBeanstalk::ConfigurationTemplate
+        DependsOn: BuildWaitCondition
         Properties:
             ApplicationName:
                 Ref: NewsApp
@@ -669,6 +688,7 @@ Resources:
             SolutionStackName: 64bit Amazon Linux 2 v5.5.4 running Node.js 16
     NewsAppEnvironment:
         Type: AWS::ElasticBeanstalk::Environment
+        DependsOn: BuildWaitCondition
         Properties:
             ApplicationName:
                 Ref: NewsApp
@@ -677,6 +697,7 @@ Resources:
                 Ref: NewsConfigurationTemplate
             VersionLabel:
                 Ref: NewsAppVersion
+
     MyInstanceProfile:
         Type: AWS::IAM::InstanceProfile
         Properties:

@@ -3,6 +3,7 @@
   <component name="ChangeListManager">
     <list default="true" id="2541d5fc-8d70-47c7-8b08-9b415f78fd7f" name="Changes" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/cloudformation.yaml" beforeDir="false" afterPath="$PROJECT_DIR$/cloudformation.yaml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/temptemplate.yaml" beforeDir="false" afterPath="$PROJECT_DIR$/temptemplate.yaml" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
@@ -68,7 +69,7 @@
       <updated>1658777283060</updated>
       <workItem from="1658777284784" duration="3102000" />
       <workItem from="1658781421419" duration="34657000" />
-      <workItem from="1658849158743" duration="11236000" />
+      <workItem from="1658849158743" duration="18539000" />
     </task>
     <servers />
   </component>

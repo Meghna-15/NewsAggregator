@@ -18,18 +18,19 @@ import { FiMenu } from "react-icons/fi";
 import { useRef, useContext } from "react";
 import { AccountContext } from "./Accounts";
 import { useNavigate } from "react-router-dom";
+import Cookies from "js-cookie";
 
 const NavBar = () => {
   const btnRef = useRef();
   const { isOpen, onOpen, onClose } = useDisclosure();
-  const menuList = ["home", "profile", "favorite", "categories", "logout"];
+  const menuList = ["home", "favorite", "categories", "logout"];
   const isDesktop = useBreakpointValue({ base: false, lg: true });
   const navigate = useNavigate();
 
   const { logout } = useContext(AccountContext);
 
   const handleLogout = () => {
-    console.log("logout clicked");
+    Cookies.remove("email");
     logout();
     navigate("/");
   };
@@ -48,19 +49,18 @@ const NavBar = () => {
           {isDesktop ? (
             <Stack direction="row">
               <ButtonGroup variant="link" spacing="8">
-                {menuList.map((item) => (
-                  <Button
-                    key={item}
-                    color="white"
-                    onClick={() =>
-                      !(item === "logout")
-                        ? navigate("/" + item + "")
-                        : handleLogout()
-                    }
-                  >
-                    {item}
-                  </Button>
-                ))}
+                <Button color="white" onClick={() => navigate("/home")}>
+                  Home
+                </Button>
+                <Button color="white" onClick={() => navigate("/favorite")}>
+                  Favorites
+                </Button>
+                <Button color="white" onClick={() => navigate("/categories")}>
+                  Categories
+                </Button>
+                <Button color="white" onClick={() => navigate("/logout")}>
+                  Logout
+                </Button>
               </ButtonGroup>
             </Stack>
           ) : (
@@ -80,10 +80,7 @@ const NavBar = () => {
                         <Box onClick={() => navigate("/home")} p={3}>
                           home
                         </Box>
-                        <Link to="profile" p={3}>
-                          {"profile"}
-                        </Link>
-                        <Box onClick={() => navigate("/favourite")} p={3}>
+                        <Box onClick={() => navigate("/favorite")} p={3}>
                           {"favorite"}
                         </Box>
                         <Box onClick={() => navigate("/categories")} p={3}>

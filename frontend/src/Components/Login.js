@@ -47,7 +47,7 @@ const Login = () => {
     e.preventDefault();
     authenticate(email, password)
       .then((data) => {
-        Cookies.set("NewsBurstCookie", data);
+        Cookies.set("email", email);
         navigate("home");
       })
       .catch((err) => {

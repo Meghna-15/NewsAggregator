@@ -12,6 +12,7 @@ import NewsCard from "./Components/home";
 import { dataPromise } from "./UserPool";
 import NavBar from "./Components/NavBar";
 import ConfirmUser from "./Components/Confirmation";
+import Favorite from "./Components/Favourites";
 
 const App = () => {
   return (
@@ -20,20 +21,13 @@ const App = () => {
         <BrowserRouter>
           <Routes>
             <Route path="/navbar" element={<NavBar />} />
-            <Route
-              path="/categories"
-              element={
-                <PrivateRoute>
-                  <Categories />
-                </PrivateRoute>
-              }
-            />
-            {console.log("ENV VARS: ", process.env)}
+
             <Route path="/" element={<Login />} />
             <Route path="/register" element={<Register />} />
             <Route path="/home" element={<Home />} />
             <Route path="/categories" element={<Categories />} />
             <Route path="/confirmation" element={<ConfirmUser />} />
+            <Route path="/favorite" element={<Favorite />} />
           </Routes>
         </BrowserRouter>
       </Account>
